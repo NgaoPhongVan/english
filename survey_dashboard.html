@@ -1,0 +1,2354 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân Tích Khảo Sát Học Từ Vựng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:wght@500&display=swap"
+        rel="stylesheet">
+    <style>
+        .chart-container {
+            position: relative;
+            height: 420px; /* Increased default height */
+            padding: 1rem;
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            /* box-shadow: 0 10px 20px rgba(0,0,0,0.05), 0 6px 6px rgba(0,0,0,0.07); */
+        }
+         .chart-container-large { /* For Likert chart */
+            height: 550px;
+        }
+
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #581c87 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gradient-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1.5" fill="rgba(255,255,255,0.1)"/></svg>');
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .card-hover {
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            /* backdrop-filter: blur(10px); */ /* Can be performance intensive */
+        }
+
+        .card-hover:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card-2 {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        }
+
+        .stat-card-3 {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .stat-card-4 {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .export-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .export-btn:hover::before {
+            left: 100%;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+        }
+
+        .download-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .download-btn:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .chart-title {
+            font-weight: 600;
+            font-size: 1.125rem;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-divider {
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+            border-radius: 2px;
+            margin: 2rem 0;
+        }
+
+        .professional-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        }
+
+        @media (max-width: 768px) {
+            .professional-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 380px; /* Adjusted for smaller screens */
+            }
+            .chart-container-large {
+                height: 450px;
+            }
+        }
+
+        /* Loading animations */
+        .loading-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            z-index: 1000;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        .notification-success {
+            background-color: #4ade80; /* green-400 */
+            color: #052e16; /* green-950 */
+        }
+        .notification-error {
+            background-color: #f87171; /* red-400 */
+            color: #450a0a; /* red-950 */
+        }
+        .notification-info {
+            background-color: #60a5fa; /* blue-400 */
+            color: #1e3a8a; /* blue-900 */
+        }
+
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-100 to-blue-100 min-h-screen font-roboto">
+    <!-- Header with Export Button -->
+    <header class="gradient-bg text-white shadow-2xl relative z-10">
+        <div class="container mx-auto px-6 py-12">
+            <div class="flex flex-col md:flex-row justify-between items-center relative z-10">
+                <div class="text-center md:text-left flex-1 mb-6 md:mb-0">
+                    <h1 class="text-4xl lg:text-5xl font-bold mb-3 tracking-tight">
+                        <i class="fas fa-chart-line mr-3 text-blue-200"></i>
+                        Phân Tích Khảo Sát Học Từ Vựng
+                    </h1>
+                    <p class="text-lg lg:text-xl opacity-90 font-light tracking-wide">Dashboard Thống Kê Khoa Học & Trực Quan</p>
+                    <div class="mt-4 text-sm opacity-75 mono-text">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Cập nhật: <span id="currentDate"></span>
+                    </div>
+                </div>
+                <button id="exportPDF"
+                    class="export-btn text-white px-6 py-3 md:px-8 md:py-4 rounded-xl hover:opacity-90 transition duration-300 shadow-lg text-sm md:text-base">
+                    <i class="fas fa-file-pdf mr-2"></i>
+                    Xuất Báo Cáo PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 sm:px-6 py-10">
+        <!-- Enhanced Summary Statistics -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-600 text-sm">Tổng số khảo sát</p>
+                        <p class="text-2xl font-bold text-gray-800" id="totalSurveys">0</p>
+                        <p class="text-xs text-green-600" id="responseRate">Tỷ lệ phản hồi: 100%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover fade-in" style="animation-delay: 0.1s;">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-graduation-cap text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-600 text-sm">Năm học phổ biến</p>
+                        <p class="text-xl font-bold text-gray-800" id="popularYear">-</p>
+                        <p class="text-xs text-blue-600" id="yearPercentage">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover fade-in" style="animation-delay: 0.2s;">
+                <div class="flex items-center">
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-brain text-purple-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-600 text-sm">Phương pháp ưa thích</p>
+                        <p class="text-base font-bold text-gray-800" id="popularMethod">-</p>
+                        <p class="text-xs text-purple-600" id="methodPercentage">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover fade-in" style="animation-delay: 0.3s;">
+                <div class="flex items-center">
+                    <div class="p-3 bg-yellow-100 rounded-full">
+                        <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-600 text-sm">Tần suất ôn tập</p>
+                        <p class="text-base font-bold text-gray-800" id="reviewFreq">-</p>
+                        <p class="text-xs text-yellow-600" id="reviewPercentage">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Statistics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card rounded-xl shadow-lg p-6 text-white card-hover fade-in" style="animation-delay: 0.4s;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white opacity-90 text-sm">Điểm TB Likert</p>
+                        <p class="text-3xl font-bold" id="avgLikert">0.0</p>
+                        <p class="text-xs opacity-80">Thang điểm 1-5</p>
+                    </div>
+                    <i class="fas fa-star text-4xl opacity-50"></i>
+                </div>
+            </div>
+
+            <div class="stat-card-2 rounded-xl shadow-lg p-6 text-white card-hover fade-in" style="animation-delay: 0.5s;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white opacity-90 text-sm">Cronbach's Alpha</p>
+                        <p class="text-3xl font-bold" id="cronbachAlpha">N/A</p>
+                        <p class="text-xs opacity-80" id="cronbachDesc">Độ tin cậy thang đo</p>
+                    </div>
+                    <i class="fas fa-shield-alt text-4xl opacity-50"></i>
+                </div>
+            </div>
+
+            <div class="stat-card-3 rounded-xl shadow-lg p-6 text-white card-hover fade-in" style="animation-delay: 0.6s;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white opacity-90 text-sm">Tỷ Lệ Đồng Ý</p>
+                        <p class="text-3xl font-bold" id="agreeRate">0%</p>
+                        <p class="text-xs opacity-80">(Đồng ý + H.toàn đồng ý)</p>
+                    </div>
+                    <i class="fas fa-thumbs-up text-4xl opacity-50"></i>
+                </div>
+            </div>
+
+            <div class="stat-card-4 rounded-xl shadow-lg p-6 text-white card-hover fade-in" style="animation-delay: 0.7s;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white opacity-90 text-sm">Độ Lệch Chuẩn</p>
+                        <p class="text-3xl font-bold" id="stdDev">0.0</p>
+                        <p class="text-xs opacity-80">Độ phân tán Likert</p>
+                    </div>
+                    <i class="fas fa-wave-square text-4xl opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Upload -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 fade-in" style="animation-delay: 0.8s;">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-file-csv mr-2 text-blue-600"></i>
+                Dữ Liệu Khảo Sát
+            </h2>
+            <div id="loadingIndicator"
+                class="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50">
+                <div class="flex items-center justify-center mb-2">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+                <p class="text-blue-600 font-medium">Đang tải dữ liệu từ file be.csv...</p>
+            </div>
+
+            <div id="uploadSection" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hidden">
+                <input type="file" id="csvFile" accept=".csv" class="hidden">
+                <button onclick="document.getElementById('csvFile').click()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105">
+                    <i class="fas fa-upload mr-2"></i>
+                    Chọn File CSV Khác
+                </button>
+                <p class="text-gray-500 mt-2 text-sm">Hoặc kéo thả file CSV vào đây</p>
+            </div>
+            <div id="dataStatusContainer"></div> <!-- Container for data status messages -->
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Enhanced Charts Grid -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fas fa-chart-pie mr-3 text-blue-600"></i>
+                Biểu Đồ Phân Tích Chi Tiết
+            </h2>
+
+            <div class="professional-grid">
+                <!-- Question 2: Year Distribution -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in" style="animation-delay: 0.9s;">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-user-graduate text-blue-600"></i>
+                            Phân Bổ Sinh Viên
+                        </h3>
+                        <button onclick="downloadChart('yearChart', 'phan-bo-sinh-vien')"
+                            class="download-btn text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-1"></i> Tải
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="yearChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Question 3: Review Frequency -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in" style="animation-delay: 1.0s;">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-history text-green-600"></i>
+                            Tần Suất Ôn Tập
+                        </h3>
+                        <button onclick="downloadChart('reviewChart', 'tan-suat-on-tap')"
+                            class="download-btn text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-1"></i> Tải
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="reviewChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Question 4: Active Learning -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in" style="animation-delay: 1.1s;">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-glasses text-purple-600"></i>
+                            Chủ Động Học Qua Đọc/Nghe
+                        </h3>
+                        <button onclick="downloadChart('activeChart', 'chu-dong-hoc')"
+                            class="download-btn text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-1"></i> Tải
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="activeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Question 5: Learning Methods -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in" style="animation-delay: 1.2s;">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-pencil-ruler text-red-600"></i>
+                            Phương Pháp Học Phổ Biến
+                        </h3>
+                        <button onclick="downloadChart('methodChart', 'phuong-phap-hoc')"
+                            class="download-btn text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-1"></i> Tải
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="methodChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Correlation Heatmap -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in" style="animation-delay: 1.3s;">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-link text-orange-600"></i>
+                            Ma Trận Tương Quan (Nhóm Likert)
+                        </h3>
+                        <button onclick="downloadChart('correlationChart', 'ma-tran-tuong-quan')"
+                            class="download-btn text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-1"></i> Tải
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="correlationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Trend Analysis -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in" style="animation-delay: 1.4s;">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-chart-line text-teal-600"></i>
+                            Xu Hướng Điểm TB (Thói Quen)
+                        </h3>
+                        <button onclick="downloadChart('trendChart', 'xu-huong-diem-thoi-quen')"
+                            class="download-btn text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-1"></i> Tải
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Distribution Analysis -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in" style="animation-delay: 1.5s;">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-bell text-pink-600"></i> <!-- Changed icon for better semantics -->
+                            Phân Phối Chung Điểm Likert
+                        </h3>
+                        <button onclick="downloadChart('distributionChart', 'phan-phoi-diem-likert')"
+                            class="download-btn text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-1"></i> Tải
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Radar Chart -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in" style="animation-delay: 1.6s;">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-bullseye text-emerald-600"></i> <!-- Changed icon -->
+                            Tổng Quan Các Khía Cạnh
+                        </h3>
+                        <button onclick="downloadChart('radarChart', 'radar-tong-quan-khia-canh')"
+                            class="download-btn text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-download mr-1"></i> Tải
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Likert Scale Analysis - Full Width -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in mt-8" style="animation-delay: 1.7s;">
+                <div class="chart-header">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                        <h3 class="chart-title mb-2 sm:mb-0">
+                            <i class="fas fa-tasks text-indigo-600"></i>
+                            Đánh Giá Thái Độ (Thang Likert)
+                        </h3>
+                        <select id="likertGroup"
+                            class="bg-gray-50 border border-gray-300 text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent mono-text">
+                            <option value="habits">Thói quen học từ vựng</option>
+                            <option value="spaced">PP Lặp lại ngắt quãng</option>
+                            <option value="context">Học từ vựng qua ngữ cảnh</option>
+                            <option value="difficulties_spaced">Khó khăn: Lặp lại NQ</option>
+                            <option value="difficulties_context">Khó khăn: Qua ngữ cảnh</option>
+                        </select>
+                    </div>
+                    <button onclick="downloadChart('likertChart', 'danh-gia-thai-do-likert')"
+                        class="download-btn text-white px-4 py-2 rounded-lg mt-2 sm:mt-0">
+                        <i class="fas fa-download mr-1"></i> Tải
+                    </button>
+                </div>
+                <div class="chart-container chart-container-large">
+                    <canvas id="likertChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+        
+        <!-- Enhanced Statistical Analysis -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mt-8 fade-in" style="animation-delay: 1.8s;">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                 <i class="fas fa-square-root-alt mr-3 text-orange-600"></i>
+                Phân Tích Thống Kê Toàn Diện
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-50 rounded-lg p-4 shadow">
+                    <h4 class="font-semibold text-gray-700 mb-2 text-lg"><i class="fas fa-clipboard-list mr-2"></i>Thống Kê Mô Tả</h4>
+                    <div id="descriptiveStats" class="text-sm text-gray-600 space-y-1">Đang tải...</div>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-4 shadow">
+                    <h4 class="font-semibold text-gray-700 mb-2 text-lg"><i class="fas fa-project-diagram mr-2"></i>Phân Tích Tương Quan (Ví dụ)</h4>
+                    <div id="correlationStats" class="text-sm text-gray-600 space-y-1">Đang tải...</div>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-4 shadow">
+                    <h4 class="font-semibold text-gray-700 mb-2 text-lg"><i class="fas fa-balance-scale mr-2"></i>Kiểm Định Thống Kê (Mô phỏng)</h4>
+                    <div id="testStats" class="text-sm text-gray-600 space-y-1">Đang tải...</div>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-4 shadow">
+                    <h4 class="font-semibold text-gray-700 mb-2 text-lg"><i class="fas fa-sitemap mr-2"></i>Phân Tích Nhân Tố (Mô phỏng)</h4>
+                    <div id="factorStats" class="text-sm text-gray-600 space-y-1">Đang tải...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Analysis Tables -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mt-8 fade-in" style="animation-delay: 1.9s;">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fas fa-table mr-3 text-blue-600"></i>
+                Bảng Phân Tích Chi Tiết (Điểm Likert)
+            </h3>
+            <div class="overflow-x-auto shadow-md rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200" id="detailTable">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Câu hỏi (ID)</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Trung bình</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Độ lệch chuẩn</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Tỷ lệ đồng ý (%)</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Phân loại mức độ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="detailTableBody">
+                        <tr><td colspan="5" class="text-center py-4 text-gray-500">Đang tải dữ liệu bảng...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Insights and Recommendations -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mt-8 fade-in" style="animation-delay: 2.0s;">
+             <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fas fa-lightbulb mr-3 text-yellow-400"></i>
+                Nhận Định và Khuyến Nghị
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-blue-50 rounded-lg p-6 shadow-md">
+                    <h4 class="font-semibold text-blue-800 mb-3 text-lg"><i class="fas fa-thumbs-up mr-2"></i>Điểm Mạnh</h4>
+                    <div id="strengthsAnalysis" class="text-sm text-blue-700 space-y-2">Đang phân tích...</div>
+                </div>
+                <div class="bg-red-50 rounded-lg p-6 shadow-md">
+                    <h4 class="font-semibold text-red-800 mb-3 text-lg"><i class="fas fa-exclamation-triangle mr-2"></i>Điểm Cần Cải Thiện</h4>
+                    <div id="weaknessesAnalysis" class="text-sm text-red-700 space-y-2">Đang phân tích...</div>
+                </div>
+            </div>
+            <div class="bg-green-50 rounded-lg p-6 mt-6 shadow-md">
+                <h4 class="font-semibold text-green-800 mb-3 text-lg"><i class="fas fa-directions mr-2"></i>Khuyến Nghị</h4>
+                <div id="recommendations" class="text-sm text-green-700 space-y-2">Sinh viên nhận thức được tầm quan trọng của việc học từ vựng và chủ động tìm cách học.
+Học qua ngữ cảnh (đọc, nghe) được đánh giá rất cao về tính hiệu quả và sự yêu thích.
+PP Lặp lại ngắt quãng được hiểu và có tiềm năng, nhưng việc duy trì và sử dụng công cụ còn gặp khó khăn.
+Khó khăn lớn nhất là thiếu môi trường sử dụng tiếng Anh thực tế, dẫn đến việc dễ quên từ và thiếu phản xạ.
+Sinh viên mong muốn các công cụ học từ vựng dễ sử dụng, linh hoạt, có tính tương tác và theo dõi được tiến độ.
+Các yếu tố giúp học hiệu quả bao gồm chiến lược tốt, tài liệu thú vị, học qua ngữ cảnh, sử dụng công nghệ và có sự tương tác/phản hồi.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; <span id="currentYear">2025</span> Survey Analysis Dashboard. Phát triển với ❤️ bởi Muể</p>
+        </div>
+    </footer>
+
+        <script>
+        // Global variables
+        let surveyData = [];
+        let charts = {}; // Object to store chart instances
+
+        // Color schemes for charts
+        const colorSchemes = {
+            primary: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316', '#d946ef', '#78716c'],
+            gradientBlue: ['#60a5fa', '#2563eb'],
+            gradientGreen: ['#4ade80', '#15803d'],
+            gradientPurple: ['#c084fc', '#7e22ce'],
+            likert: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a'] // Red, Orange, Yellow, Green, DarkGreen
+        };
+
+        // Update Chart.js font defaults
+        Chart.defaults.font.family = 'Roboto, sans-serif';
+        Chart.defaults.font.weight = '400';
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+        Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+        Chart.defaults.plugins.legend.labels.padding = 15;
+        Chart.defaults.plugins.legend.labels.font = {
+            family: 'Roboto, sans-serif',
+            size: 12,
+            weight: '500'
+        };
+        Chart.defaults.plugins.tooltip.titleFont = { weight: 'bold', size: 14 };
+        Chart.defaults.plugins.tooltip.bodyFont = { size: 12 };
+        Chart.defaults.plugins.tooltip.boxPadding = 5;
+        Chart.defaults.plugins.tooltip.callbacks.label = function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+                label += ': ';
+            }
+            if (context.parsed.y !== null && context.parsed.y !== undefined) {
+                label += context.parsed.y.toLocaleString('vi-VN');
+            } else if (context.parsed.x !== null && context.parsed.x !== undefined && context.chart.options.indexAxis === 'y') {
+                label += context.parsed.x.toLocaleString('vi-VN');
+            } else if (context.parsed !== null && typeof context.parsed === 'number') {
+                 label += context.parsed.toLocaleString('vi-VN');
+            }
+            return label;
+        };
+
+
+        // --- Statistical Calculation Functions ---
+        function calculateMean(arr) {
+            if (!arr || arr.length === 0) return 0;
+            const sum = arr.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+            return sum / arr.length;
+        }
+
+        function calculateStandardDeviation(arr) {
+            if (!arr || arr.length <= 1) return 0;
+            const mean = calculateMean(arr);
+            const validArr = arr.map(val => parseFloat(val) || 0);
+            const squaredDiffs = validArr.map(val => Math.pow(val - mean, 2));
+            return Math.sqrt(squaredDiffs.reduce((sum, val) => sum + val, 0) / (arr.length - 1));
+        }
+        
+        function calculateCorrelation(xArr, yArr) {
+            if (!xArr || !yArr || xArr.length !== yArr.length || xArr.length < 2) return 0;
+            
+            const n = xArr.length;
+            const x = xArr.map(val => parseFloat(val) || 0);
+            const y = yArr.map(val => parseFloat(val) || 0);
+
+            const sumX = x.reduce((s, v) => s + v, 0);
+            const sumY = y.reduce((s, v) => s + v, 0);
+            const sumXY = x.reduce((s, v, i) => s + v * y[i], 0);
+            const sumX2 = x.reduce((s, v) => s + v * v, 0);
+            const sumY2 = y.reduce((s, v) => s + v * v, 0);
+
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+            if (denominator === 0) return 0;
+            return numerator / denominator;
+        }
+
+        function calculateCronbachAlpha(items) {
+            if (!items || items.length < 2 || !items[0] || items[0].length < 2) return 0;
+
+            const k = items.length; 
+            const n = items[0].length; 
+
+            for (let i = 0; i < k; i++) {
+                if (!items[i] || items[i].length !== n) {
+                    console.error("Cronbach Alpha: All items must have the same number of responses.");
+                    return 0;
+                }
+                items[i] = items[i].map(val => parseFloat(val) || 0); 
+            }
+            
+            const itemVariances = items.map(item => {
+                const mean = calculateMean(item);
+                return item.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / (n -1); 
+            });
+            const sumItemVariances = itemVariances.reduce((a, b) => a + b, 0);
+
+            const totalScores = Array(n).fill(0);
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < k; j++) {
+                    totalScores[i] += items[j][i];
+                }
+            }
+            
+            const meanTotalScores = calculateMean(totalScores);
+            const totalVariance = totalScores.reduce((sum, score) => sum + Math.pow(score - meanTotalScores, 2), 0) / (n - 1);
+
+            if (totalVariance === 0) {
+                return (sumItemVariances === 0) ? 1 : 0; 
+            }
+            
+            const alpha = (k / (k - 1)) * (1 - sumItemVariances / totalVariance);
+            return isNaN(alpha) ? 0 : alpha; 
+        }
+
+
+        const likertValuesMapping = {
+            'Hoàn toàn không đồng ý': 1, 'Không đồng ý': 2, 'Trung lập': 3,
+            'Đồng ý': 4, 'Hoàn toàn đồng ý': 5
+        };
+
+        function getNumericColumnData(columnName) {
+            if (!surveyData || surveyData.length === 0 || !columnName) return [];
+            return surveyData.map(row => likertValuesMapping[row[columnName]] || parseInt(row[columnName], 10) || 0)
+                             .filter(val => val >= 1 && val <= 5);
+        }
+        
+        function getColumnData(columnName) {
+            if (!surveyData || surveyData.length === 0 || !columnName) return [];
+            return surveyData.map(row => row[columnName]).filter(d => d && d.trim() !== "");
+        }
+
+        function countValues(arr) { // Added this utility function
+            if (!arr) return {};
+            return arr.reduce((acc, val) => {
+                acc[val] = (acc[val] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+
+        // --- File Handling and Initialization ---
+        function waitForPapaParse() {
+            return new Promise((resolve) => {
+                if (typeof Papa !== 'undefined') resolve();
+                else setTimeout(() => waitForPapaParse().then(resolve), 100);
+            });
+        }
+
+        async function loadDefaultCSV() {
+            try {
+                await waitForPapaParse();
+                document.getElementById('loadingIndicator').classList.remove('hidden');
+                document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('dataStatusContainer').innerHTML = '';
+
+
+                const response = await fetch('be.csv'); 
+                if (!response.ok) throw new Error(`Không thể tải be.csv: ${response.statusText}`);
+                
+                const csvText = await response.text();
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    encoding: "UTF-8",
+                    complete: processParsedData,
+                    error: (error) => { throw new Error('Lỗi khi đọc CSV: ' + error.message); }
+                });
+            } catch (error) {
+                console.error('Lỗi khi tải file CSV mặc định:', error);
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('uploadSection').classList.remove('hidden');
+                showDataStatus(`Không thể tải file be.csv. Vui lòng tải file thủ công. Lỗi: ${error.message}`, 'error');
+                document.getElementById('totalSurveys').textContent = 'Chưa có dữ liệu';
+            }
+        }
+        
+        async function handleFileUpload(file) {
+            if (!file) return;
+            try {
+                await waitForPapaParse();
+                document.getElementById('dataStatusContainer').innerHTML = '';
+                showDataStatus(`Đang xử lý file ${file.name}...`, 'info', false);
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    Papa.parse(e.target.result, {
+                        header: true,
+                        skipEmptyLines: true,
+                        encoding: "UTF-8",
+                        complete: (results) => processParsedData(results, file.name),
+                        error: (error) => {
+                            console.error('Lỗi khi đọc CSV:', error);
+                            showDataStatus(`Lỗi khi đọc file CSV: ${error.message}`, 'error');
+                        }
+                    });
+                };
+                reader.readAsText(file, 'UTF-8');
+            } catch (error) {
+                console.error('Lỗi khi tải file lên:', error);
+                showDataStatus(`Lỗi khi tải file: ${error.message}`, 'error');
+            }
+        }
+
+        function processParsedData(results, fileName = 'be.csv') {
+            if (results.data && results.data.length > 0) {
+                surveyData = results.data.filter(row => Object.values(row).some(value => value && value.trim() !== ''));
+                console.log(`Dữ liệu từ ${fileName} đã tải:`, surveyData.length, 'phản hồi');
+                
+                if (surveyData.length === 0) {
+                    showDataStatus(`File ${fileName} không chứa dữ liệu hợp lệ.`, 'error');
+                    return;
+                }
+
+                updateSummaryStats();
+                createAllCharts();
+                updateStatisticalAnalysis();
+                createDetailTable();
+                generateInsights();
+
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('uploadSection').classList.remove('hidden');
+                showDataStatus(`File ${fileName} đã được tải và phân tích thành công! (${surveyData.length} phản hồi)`, 'success');
+            } else {
+                console.error('Không tìm thấy dữ liệu trong file CSV hoặc file trống.');
+                showDataStatus(`Không tìm thấy dữ liệu hợp lệ trong file ${fileName}.`, 'error');
+                 document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('uploadSection').classList.remove('hidden');
+            }
+        }
+        
+        function showDataStatus(message, type = 'info', autoDismiss = true) {
+            const dataStatusContainer = document.getElementById('dataStatusContainer');
+            if (!dataStatusContainer) return;
+            dataStatusContainer.innerHTML = ''; 
+
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `mt-4 p-4 rounded-lg notification ${type === 'success' ? 'notification-success' : type === 'error' ? 'notification-error' : 'notification-info'}`;
+            
+            let iconClass = 'fas fa-info-circle';
+            if (type === 'success') iconClass = 'fas fa-check-circle';
+            if (type === 'error') iconClass = 'fas fa-exclamation-triangle';
+
+            statusDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="${iconClass} mr-2"></i>
+                    <span class="font-medium">${message}</span>
+                </div>`;
+            dataStatusContainer.appendChild(statusDiv);
+
+            setTimeout(() => {
+                statusDiv.classList.add('show');
+            }, 10);
+
+            if (autoDismiss) {
+                setTimeout(() => {
+                    statusDiv.classList.remove('show');
+                     setTimeout(() => {
+                        if (statusDiv.parentNode) { 
+                           statusDiv.remove();
+                        }
+                    }, 300);
+                }, 5000);
+            }
+        }
+
+        // --- UI and Utility Functions ---
+        function setupDragAndDrop() { 
+            const uploadSection = document.getElementById('uploadSection');
+            if (!uploadSection) {
+                console.warn("Upload section not found for drag and drop setup.");
+                return;
+            }
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, preventDefaults, false);
+            });
+            function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, () => uploadSection.classList.add('border-blue-500', 'bg-blue-50'), false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('border-blue-500', 'bg-blue-50'), false);
+            });
+            uploadSection.addEventListener('drop', (e) => {
+                const file = e.dataTransfer.files[0];
+                if (file && (file.type === 'text/csv' || file.name.endsWith('.csv'))) {
+                    handleFileUpload(file);
+                } else {
+                    showDataStatus('Vui lòng chọn file CSV hợp lệ.', 'error');
+                }
+            }, false);
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        function extractQuestionNumber(columnName) {
+            if (!columnName) return "N/A";
+            const match = columnName.match(/\[(\d+)\.?\s*([^\]]+)\]/); 
+            if (match && match[1] && match[2]) {
+                 return `Q${match[1]} (${truncateText(match[2].split('.')[0].trim(), 20)})`;
+            }
+            const simpleMatch = columnName.match(/(\d+)\.(.*)/);
+            if (simpleMatch && simpleMatch[1] && simpleMatch[2]) {
+                 return `Q${simpleMatch[1]} (${truncateText(simpleMatch[2].trim(), 20)})`;
+            }
+            return truncateText(columnName, 25);
+        }
+
+        function getLikertGroups() {
+            return {
+                habits: [
+                    'Thói quen học từ vựng nói chung của bạn  [9. Tôi thường cố gắng học từ vựng mới mỗi ngày]',
+                    'Thói quen học từ vựng nói chung của bạn  [10. Tôi thường xuyên ôn lại từ vựng ngoài giờ học]',
+                    'Thói quen học từ vựng nói chung của bạn  [11. Tôi có sổ từ vựng cá nhân để ghi nhớ và ghi chú]',
+                    'Thói quen học từ vựng nói chung của bạn  [12. Tôi cố gắng sử dụng từ vựng mới trong kỹ năng viết và nói]',
+                    'Thói quen học từ vựng nói chung của bạn  [13. Tôi thường quên từ mới ngay sau khi học]'
+                ],
+                spaced: [
+                    'Bạn nghĩ gì về việc học từ vựng bằng phương pháp lặp lại ngắt quãng? [15. Tôi hiểu cách hoạt động của phương pháp lặp lại ngắt quãng]',
+                    'Bạn nghĩ gì về việc học từ vựng bằng phương pháp lặp lại ngắt quãng? [16. Tôi đã từng sử dụng các công cụ lặp lại ngắt quãng (ví dụ Anki, Quizlet)]',
+                    'Bạn nghĩ gì về việc học từ vựng bằng phương pháp lặp lại ngắt quãng? [17. Phương pháp lặp lại ngắt quãng giúp tôi ghi nhớ từ vựng lâu dài]',
+                    'Bạn nghĩ gì về việc học từ vựng bằng phương pháp lặp lại ngắt quãng? [18. Tôi thấy phương pháp lặp lại ngắt quãng hiệu quả hơn việc học thuộc từ vựng theo 1 bảng danh sách từ vựng dài]',
+                    'Bạn nghĩ gì về việc học từ vựng bằng phương pháp lặp lại ngắt quãng? [19. Tôi sẵn sàng áp dụng phương pháp lặp lại ngắt quãng trong quá trình học từ vựng sau này]'
+                ],
+                context: [
+                    'Bạn cảm thấy thế nào về việc học từ vựng qua ngữ cảnh? [20. Học từ vựng trong ngữ cảnh (ví dụ qua việc đọc sách, tài liệu hoặc nghe nhạc, audio) giúp tôi ghi nhớ từ tốt hơn]',
+                    'Bạn cảm thấy thế nào về việc học từ vựng qua ngữ cảnh? [21. Tôi hiểu nghĩa của từ tốt hơn khi chúng được sử dụng trong tình huống thực tế]',
+                    'Bạn cảm thấy thế nào về việc học từ vựng qua ngữ cảnh? [22. Học từ theo ngữ cảnh giúp tôi sử dụng từ vựng trôi chảy hơn]',
+                    'Bạn cảm thấy thế nào về việc học từ vựng qua ngữ cảnh? [23. Tôi thích học từ vựng qua ngữ cảnh hơn là học theo danh sách từng từ riêng lẻ]',
+                    'Bạn cảm thấy thế nào về việc học từ vựng qua ngữ cảnh? [24. Tôi thích học từ vựng qua truyện, hội thoại hoặc ví dụ thực tế]'
+                ],
+                difficulties_spaced: [
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng theo phương pháp lặp lại ngắt quãng? [25. Tôi thường gặp khó khăn trong việc duy trì học từ theo phương pháp lặp lại cách quãng]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng theo phương pháp lặp lại ngắt quãng? [26. Tôi không biết cách sắp xếp thời gian ôn tập hiệu quả khi dùng phương pháp lặp lại cách quãng]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng theo phương pháp lặp lại ngắt quãng? [27. Tôi dễ mất động lực khi sử dụng các công cụ như Quizlet/ Anki để học từ vựng]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng theo phương pháp lặp lại ngắt quãng? [28. Việc học từ vựng khiến tôi cảm thấy nhàm chán vì nó lặp đi lặp lại]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng theo phương pháp lặp lại ngắt quãng? [29. Việc học từ vựng qua kỹ năng đọc hoặc nghe mất quá nhiều thời gian]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng theo phương pháp lặp lại ngắt quãng? [30. Tôi không tự tin khi lựa chọn phương pháp học phù hợp với từng loại từ vựng]'
+                ],
+                difficulties_context: [
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng dựa trên ngữ cảnh? [31. Tôi gặp khó khăn khi tìm hoặc tạo ngữ cảnh phù hợp để học từ mới]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng dựa trên ngữ cảnh? [32. Tôi cảm thấy khó xác định nghĩa chính xác của từ trong ngữ cảnh]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng dựa trên ngữ cảnh? [33. Tôi không có đủ vốn ngữ pháp hoặc vốn từ để hiểu ngữ cảnh]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng dựa trên ngữ cảnh? [34. Việc học từ qua ngữ cảnh tốn nhiều thời gian hơn so với học bằng flashcard hay ghi nhớ theo danh sách từ]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng dựa trên ngữ cảnh? [35. Tôi không biết nên dùng tài liệu nào để học từ theo ngữ cảnh]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng dựa trên ngữ cảnh? [36. Tôi có thể hiểu từ trong đoạn văn, nhưng không sử dụng được khi nói hoặc viết]',
+                    'Bạn gặp phải những khó khăn gì trong khi học từ vựng dựa trên ngữ cảnh? [37. Tôi thường hay quên từ sau khi đọc/nghe nếu không gặp lại từ đó]'
+                ]
+            };
+        }
+
+        // --- Chart Creation Functions (sử dụng dữ liệu thực) ---
+        function createYearChart() {
+            const col = '2. Bạn là sinh viên năm mấy?';
+            const data = getColumnData(col);
+            const counts = countValues(data);
+
+            const canvas = document.getElementById('yearChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts.year) charts.year.destroy();
+            
+            if (data.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+                ctx.fillText("Không có dữ liệu.", canvas.width/2, canvas.height/2); return;
+            }
+
+            charts.year = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: colorSchemes.primary,
+                        borderColor: '#fff', borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, padding:15 } },
+                        tooltip: { callbacks: {
+                            label: (c) => `${c.label}: ${c.parsed.toLocaleString('vi-VN')} (${(c.parsed / data.length * 100).toFixed(1)}%)`
+                        }},
+                        datalabels: { 
+                            formatter: (value, context) => {
+                                const total = context.chart.getDatasetMeta(0).total;
+                                if (total === 0) return '';
+                                const percentage = (value / total * 100);
+                                return percentage > 5 ? percentage.toFixed(1) + '%' : ''; // Show only if > 5%
+                            },
+                            color: '#fff',
+                            font: { weight: 'bold', size: '10' },
+                        }
+                    },
+                    animation: { animateRotate: true, duration: 1200 }
+                },
+                plugins: [ChartDataLabels] 
+            });
+        }
+
+        function createReviewChart() {
+            const col = '3. Bạn ôn lại từ vựng mà mình mới học bao lâu một lần?';
+            const data = getColumnData(col);
+            const counts = countValues(data);
+            const sortedLabels = Object.keys(counts).sort((a,b) => counts[b] - counts[a]); 
+
+            const canvas = document.getElementById('reviewChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts.review) charts.review.destroy();
+             if (data.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+                ctx.fillText("Không có dữ liệu.", canvas.width/2, canvas.height/2); return;
+            }
+
+            charts.review = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedLabels.map(label => truncateText(label, 25)),
+                    datasets: [{
+                        label: 'Số lượng sinh viên',
+                        data: sortedLabels.map(label => counts[label]),
+                        // SỬ DỤNG SCRIPTABLE OPTION CHO BACKGROUNDCOLOR
+                        backgroundColor: function(context) {
+                            const chart = context.chart;
+                            const {ctx, chartArea} = chart;
+                            if (!chartArea) {
+                                // Fallback nếu chartArea chưa sẵn sàng (hiếm khi xảy ra ở đây)
+                                return colorSchemes.gradientGreen[0];
+                            }
+                            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                            gradient.addColorStop(0, colorSchemes.gradientGreen[0]); // Ví dụ: '#4ade80'
+                            gradient.addColorStop(1, colorSchemes.gradientGreen[1]); // Ví dụ: '#15803d'
+                            return gradient;
+                        },
+                        borderRadius: 6, 
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: {
+                        label: (c) => `${c.parsed.y.toLocaleString('vi-VN')} SV (${(c.parsed.y / data.length * 100).toFixed(1)}%)`
+                    }}},
+                    scales: { 
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: 'rgba(0,0,0,0.05)' } 
+                        }, 
+                        x: { 
+                            grid: { display: false } 
+                        } 
+                    },
+                    animation: { duration: 1200, easing: 'easeOutQuart' }
+                }
+            });
+        }
+
+        function createActiveChart() {
+            const col = "4. Bạn có chủ động học từ vựng thông qua các tài liệu về kỹ năng đọc hoặc nghe không? (Ví dụ: ghi chú từ mới khi đọc bài, nghe hội thoại, đánh dấu từ quan trọng)";
+            const data = getColumnData(col);
+            const counts = countValues(data);
+
+            const canvas = document.getElementById('activeChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts.active) charts.active.destroy();
+            if (data.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+                ctx.fillText("Không có dữ liệu.", canvas.width/2, canvas.height/2); return;
+            }
+            
+            charts.active = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: [colorSchemes.primary[1], colorSchemes.primary[3], colorSchemes.primary[2]], 
+                        borderColor: '#fff', borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: {padding: 15} },
+                        tooltip: { callbacks: {
+                             label: (c) => `${c.label}: ${c.parsed.toLocaleString('vi-VN')} (${(c.parsed / data.length * 100).toFixed(1)}%)`
+                        }},
+                        datalabels: { 
+                            formatter: (value, context) => {
+                                const total = context.chart.getDatasetMeta(0).total;
+                                if (total === 0) return '';
+                                const percentage = (value / total * 100);
+                                return percentage > 5 ? percentage.toFixed(1) + '%' : '';
+                            },
+                            color: '#fff', font: { weight: 'bold', size: '10' },
+                        }
+                    },
+                    animation: { animateScale: true, duration: 1200 }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function createMethodChart() {
+            const col = '5. Bạn thường sử dụng phương pháp nào nhất để học từ vựng?';
+            const data = getColumnData(col);
+            const counts = countValues(data);
+            const sortedLabels = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+
+            const canvas = document.getElementById('methodChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts.method) charts.method.destroy();
+            if (data.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+                ctx.fillText("Không có dữ liệu.", canvas.width/2, canvas.height/2); return;
+            }
+
+            charts.method = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedLabels.map(label => truncateText(label, 35)),
+                    datasets: [{
+                        label: 'Số lượng sinh viên',
+                        data: sortedLabels.map(label => counts[label]),
+                        backgroundColor: colorSchemes.primary.slice(0, sortedLabels.length),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: {
+                        label: (c) => `${c.parsed.x.toLocaleString('vi-VN')} SV (${(c.parsed.x / data.length * 100).toFixed(1)}%)`
+                    }}},
+                    scales: { x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } }, y: { grid: { display: false } } },
+                    animation: { duration: 1200, easing: 'easeOutCubic' }
+                }
+            });
+        }
+        
+        function createScatterHeatmapFallback(ctx, groupNames, correlationDataForChart) {
+            if (charts.correlation_fallback) charts.correlation_fallback.destroy(); 
+             charts.correlation_fallback = new Chart(ctx, { 
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Tương quan giữa các nhóm Likert (Scatter)',
+                        data: correlationDataForChart,
+                        backgroundColor: function(context) {
+                            if (!context.raw || context.raw.v === undefined) return 'rgba(200, 200, 200, 0.5)';
+                            const value = context.raw.v;
+                            const alpha = Math.min(1, Math.abs(value) * 1.5);
+                            if (value > 0.1) return `rgba(59, 130, 246, ${alpha})`;
+                            if (value < -0.1) return `rgba(239, 68, 68, ${alpha})`;
+                            return 'rgba(200, 200, 200, 0.5)';
+                        },
+                        borderColor: '#fff',
+                        borderWidth: 1,
+                        pointRadius: function(context) { // SỬA Ở ĐÂY
+                            const chart = context.chart;
+                            const chartArea = chart.chartArea;
+                            if (chartArea && groupNames && groupNames.length > 0) {
+                                return (chartArea.width / (groupNames.length * 2.2));
+                            }
+                            return 10; // Giá trị mặc định nếu chartArea chưa sẵn sàng hoặc groupNames rỗng
+                        },
+                        pointStyle: 'rect',
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    if (!tooltipItems || tooltipItems.length === 0 || !tooltipItems[0].raw) return '';
+                                    const item = tooltipItems[0];
+                                    const xLabel = groupNames[item.raw.x] || `Nhóm ${item.raw.x + 1}`;
+                                    const yLabel = groupNames[item.raw.y] || `Nhóm ${item.raw.y + 1}`;
+                                    return `${yLabel} vs ${xLabel}`;
+                                },
+                                label: function(context) {
+                                    if (!context.raw || context.raw.v === undefined) return '';
+                                    return `Tương quan: ${context.raw.v.toFixed(2)}`;
+                                }
+                            }
+                        },
+                        datalabels: { 
+                            display: true,
+                            formatter: (context) => {
+                                 if (!context.raw || context.raw.v === undefined) return '';
+                                 return context.raw.v.toFixed(2);
+                            },
+                            color: (context) => {
+                                if (!context.raw || context.raw.v === undefined) return '#333333';
+                                return Math.abs(context.raw.v) > 0.4 ? '#ffffff' : '#333333';
+                            },
+                            font: { weight: 'bold', size: 9 },
+                            align: 'center',
+                            anchor: 'center'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear', offset: false, min: -0.5, max: groupNames.length - 0.5, reverse: true,
+                            ticks: { stepSize: 1, callback: (val, idx) => groupNames[idx] || '', padding: 5, font:{size:10} },
+                            grid: { drawBorder: false, color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: {
+                            type: 'linear', offset: false, min: -0.5, max: groupNames.length - 0.5,
+                            ticks: { stepSize: 1, callback: (val, idx) => groupNames[idx] || '', padding: 5, font:{size:10} },
+                            grid: { drawBorder: false, color: 'rgba(0,0,0,0.05)' }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function createCorrelationChart() {
+            const canvas = document.getElementById('correlationChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts.correlation) charts.correlation.destroy();
+
+            if (surveyData.length < 5) { 
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = "14px Roboto"; ctx.fillStyle = "#888"; ctx.textAlign = "center";
+                ctx.fillText("Không đủ dữ liệu (cần ít nhất 5 phản hồi có đủ cặp giá trị).", canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            const likertGroups = getLikertGroups();
+            const groupNames = ['Thói quen', 'Lặp lại NQ', 'Ngữ cảnh'];
+            const groupKeys = ['habits', 'spaced', 'context'];
+
+            const respondentGroupScores = surveyData.map(respondent => {
+                const scores = {};
+                groupKeys.forEach(key => {
+                    if (likertGroups[key] && likertGroups[key].length > 0) {
+                        const itemScores = likertGroups[key].map(colName => likertValuesMapping[respondent[colName]] || NaN);
+                        const validItemScores = itemScores.filter(s => !isNaN(s) && s >= 1 && s <= 5);
+                        scores[key] = validItemScores.length > 0 ? calculateMean(validItemScores) : NaN;
+                    } else {
+                        scores[key] = NaN;
+                    }
+                });
+                return scores;
+            });
+
+            const correlationDataForChart = [];
+            for (let i = 0; i < groupKeys.length; i++) {
+                for (let j = 0; j < groupKeys.length; j++) {
+                    let correlationValue = (i === j) ? 1.0 : 0;
+                    if (i !== j) {
+                        let pairedScores1 = [];
+                        let pairedScores2 = [];
+                        respondentGroupScores.forEach(rs => {
+                            if (!isNaN(rs[groupKeys[i]]) && !isNaN(rs[groupKeys[j]])) {
+                                pairedScores1.push(rs[groupKeys[i]]);
+                                pairedScores2.push(rs[groupKeys[j]]);
+                            }
+                        });
+
+                        if (pairedScores1.length >= 5) { 
+                           correlationValue = calculateCorrelation(pairedScores1, pairedScores2);
+                        }
+                    }
+                    correlationDataForChart.push({ x: j, y: i, v: isNaN(correlationValue) ? 0 : correlationValue });
+                }
+            }
+            
+            // Try to use 'matrix' type if chartjs-chart-matrix plugin is loaded
+            if (Chart.registry.controllers.matrix) {
+                charts.correlation = new Chart(ctx, {
+                    type: 'matrix', 
+                    data: {
+                        datasets: [{
+                            label: 'Tương quan giữa các nhóm Likert',
+                            data: correlationDataForChart,
+                            backgroundColor: (context) => { /* ... (same as your previous matrix bg color logic) ... */
+                                if (!context.raw) return 'rgba(200, 200, 200, 0.5)';
+                                const value = context.raw.v;
+                                const alpha = Math.min(1, Math.abs(value) * 1.2);
+                                if (value > 0.1) return `rgba(59, 130, 246, ${alpha})`;
+                                if (value < -0.1) return `rgba(239, 68, 68, ${alpha})`;
+                                return 'rgba(220, 220, 220, 0.6)';
+                            },
+                            borderColor: (context) => { /* ... (same as your previous matrix border color logic) ... */
+                                 if (!context.raw) return '#fff';
+                                 const value = context.raw.v;
+                                 return Math.abs(value) > 0.5 ? '#333' : '#fff';
+                            },
+                            borderWidth: 1,
+                            width: ({ chart }) => (chart.chartArea.width / groupKeys.length) - chart.options.datasets.matrix.borderWidth,
+                            height: ({ chart }) => (chart.chartArea.height / groupKeys.length) - chart.options.datasets.matrix.borderWidth,
+                        }]
+                    },
+                    options: { /* ... (same as your previous matrix options) ... */
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => `${groupNames[items[0].raw.y]} vs ${groupNames[items[0].raw.x]}`,
+                                    label: (c) => `Tương quan: ${c.raw.v.toFixed(3)}`
+                                }
+                            },
+                            datalabels: {
+                                display: true,
+                                formatter: (context) => context.raw.v.toFixed(2),
+                                color: (context) => Math.abs(context.raw.v) > 0.4 ? '#ffffff' : '#333333',
+                                font: { weight: 'bold', size: 10 }
+                            }
+                        },
+                        scales: {
+                            y: { type: 'category', labels: groupNames, offset: true, grid: { display: false }, ticks: {font: {size:10}} },
+                            x: { type: 'category', labels: groupNames, offset: true, grid: { display: false }, ticks: {font: {size:10}} }
+                        },
+                        datasets: { matrix: { borderWidth: 1 } } 
+                    },
+                    plugins: [ChartDataLabels] 
+                });
+            } else {
+                console.warn("'matrix' chart type not found. Falling back to scatter for correlation heatmap.");
+                createScatterHeatmapFallback(ctx, groupNames, correlationDataForChart); // Call the fallback
+            }
+        }
+
+        function createTrendChart() {
+            const canvas = document.getElementById('trendChart');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts.trend) charts.trend.destroy();
+
+            if (surveyData.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+                ctx.fillText("Không có dữ liệu.", canvas.width/2, canvas.height/2); return;
+            }
+
+            const likertGroups = getLikertGroups();
+            const habitQuestions = likertGroups.habits || [];
+            if (habitQuestions.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+                ctx.fillText("Nhóm 'habits' không được định nghĩa.", canvas.width/2, canvas.height/2); return;
+            }
+
+            const labels = habitQuestions.map(colName => extractQuestionNumber(colName));
+            const averageScores = habitQuestions.map(colName => {
+                const numericData = getNumericColumnData(colName);
+                return calculateMean(numericData);
+            });
+
+            charts.trend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Điểm TB (Thói quen học)',
+                        data: averageScores,
+                        borderColor: colorSchemes.primary[5], 
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        tension: 0.25, fill: true, pointRadius: 4, pointHoverRadius: 6,
+                        pointBackgroundColor: colorSchemes.primary[5],
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: {
+                        label: (c) => `${c.dataset.label || ''}: ${c.parsed.y.toFixed(2)}`
+                    }}},
+                    scales: { y: { beginAtZero: false, min: 1, max: 5, ticks: { stepSize: 0.5 } }, x: {ticks: {font:{size:10}}} }
+                }
+            });
+        }
+
+        function createDistributionChart() {
+            const canvas = document.getElementById('distributionChart');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts.distribution) charts.distribution.destroy();
+             if (surveyData.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+                ctx.fillText("Không có dữ liệu.", canvas.width/2, canvas.height/2); return;
+            }
+
+            const allLikertResponsesNumeric = [];
+            const likertGroups = getLikertGroups();
+            Object.values(likertGroups).flat().forEach(colName => {
+                if(colName) allLikertResponsesNumeric.push(...getNumericColumnData(colName));
+            });
+
+            if (allLikertResponsesNumeric.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+                ctx.fillText("Không có phản hồi Likert hợp lệ.", canvas.width/2, canvas.height/2); return;
+            }
+
+            const bins = [1, 2, 3, 4, 5, 6]; 
+            const binLabels = ['1', '2', '3', '4', '5'];
+            const binCounts = Array(binLabels.length).fill(0);
+
+            allLikertResponsesNumeric.forEach(score => {
+                if (score >= 1 && score < 2) binCounts[0]++;
+                else if (score >= 2 && score < 3) binCounts[1]++;
+                else if (score >= 3 && score < 4) binCounts[2]++;
+                else if (score >= 4 && score < 5) binCounts[3]++;
+                else if (score >= 5) binCounts[4]++; 
+            });
+            
+            charts.distribution = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: binLabels,
+                    datasets: [{
+                        label: 'Số lượng phản hồi',
+                        data: binCounts,
+                        backgroundColor: 'rgba(236, 72, 153, 0.7)', 
+                        borderColor: '#ec4899', borderWidth: 1, borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: {
+                        label: (c) => `Điểm ${c.label}: ${c.parsed.y.toLocaleString('vi-VN')} phản hồi`
+                    }}},
+                    scales: { y: { beginAtZero: true, title: {display: true, text: 'Số lượng phản hồi'} }, x: {title: {display: true, text: 'Điểm Likert'}}}
+                }
+            });
+        }
+        
+        function createRadarChart() {
+            const canvas = document.getElementById('radarChart');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts.radar) charts.radar.destroy();
+            if (surveyData.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+                ctx.fillText("Không có dữ liệu.", canvas.width/2, canvas.height/2); return;
+            }
+
+            const likertGroups = getLikertGroups();
+            const groupLabels = ['Thói quen Học', 'PP Lặp lại NQ', 'Học qua Ngữ cảnh', 'Khó khăn: Lặp lại', 'Khó khăn: Ngữ cảnh'];
+            const groupKeys = ['habits', 'spaced', 'context', 'difficulties_spaced', 'difficulties_context'];
+
+            const averageScoresForRadar = groupKeys.map(key => {
+                if (likertGroups[key] && likertGroups[key].length > 0) {
+                    const groupAllNumericScores = [];
+                    likertGroups[key].forEach(colName => {
+                        if(colName) groupAllNumericScores.push(...getNumericColumnData(colName));
+                    });
+                    const mean = calculateMean(groupAllNumericScores);
+                    // For difficulty groups, you might want to invert the score for radar (e.g., 5 - mean) if higher score means MORE difficulty
+                    // Or simply interpret it as "level of agreement with difficulty statements"
+                    return mean; 
+                }
+                return 0; 
+            });
+
+            charts.radar = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: groupLabels,
+                    datasets: [{
+                        label: 'Điểm TB các Nhóm Câu Hỏi',
+                        data: averageScoresForRadar,
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)', 
+                        borderColor: '#10b981', borderWidth: 2,
+                        pointBackgroundColor: '#10b981', pointRadius: 4, pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: false, min: 1, max: 5, ticks: { stepSize: 1, backdropColor: 'transparent', font:{size:9} },
+                            pointLabels: { font: { size: 10, weight: '500' } },
+                            grid: { color: 'rgba(0,0,0,0.08)' },
+                            angleLines: { color: 'rgba(0,0,0,0.08)'}
+                        }
+                    },
+                    plugins: { legend: { position: 'top' }, tooltip: {callbacks: {
+                        label: (c) => `${c.dataset.label || ''}: ${c.raw.toFixed(2)}`
+                    }} }
+                }
+            });
+        }
+
+        function updateLikertChart() {
+            const groupKeyEl = document.getElementById('likertGroup');
+            if (!groupKeyEl) {
+                console.warn("Likert group select element not found.");
+                return;
+            }
+            const groupKey = groupKeyEl.value;
+            const likertGroups = getLikertGroups();
+            const groupQuestionColumns = likertGroups[groupKey] || [];
+
+            const canvas = document.getElementById('likertChart');
+            if (!canvas) {
+                 console.warn("Likert chart canvas not found.");
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            if (charts.likert) charts.likert.destroy();
+
+            if (surveyData.length === 0 || groupQuestionColumns.length === 0) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.font="14px Roboto"; ctx.fillStyle="#888"; ctx.textAlign="center";
+                ctx.fillText(surveyData.length === 0 ? "Không có dữ liệu." : "Nhóm câu hỏi không hợp lệ hoặc trống.", canvas.width/2, canvas.height/2);
+                return;
+            }
+
+            const likertOrder = ['Hoàn toàn không đồng ý', 'Không đồng ý', 'Trung lập', 'Đồng ý', 'Hoàn toàn đồng ý'];
+            
+            const datasets = likertOrder.map((level, index) => ({
+                label: level,
+                data: groupQuestionColumns.map(colName => {
+                    if(!colName) return 0;
+                    const columnData = getColumnData(colName); 
+                    const counts = countValues(columnData);
+                    return columnData.length > 0 ? ((counts[level] || 0) / columnData.length * 100) : 0;
+                }),
+                backgroundColor: colorSchemes.likert[index],
+                borderColor: '#fff', borderWidth: 0.5
+            }));
+
+            charts.likert = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: groupQuestionColumns.map(col => col ? extractQuestionNumber(col) : "N/A"),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y', 
+                    scales: {
+                        x: { stacked: true, grid: { display: true, color: 'rgba(0,0,0,0.05)' }, max: 100, ticks: { callback: (v) => v + '%' } },
+                        y: { stacked: true, grid: { display: false }, ticks: { autoSkip: false, font:{size:10} } }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: {padding:15, font:{size:11}} },
+                        tooltip: { callbacks: {
+                            label: (c) => `${c.dataset.label || ''}: ${c.parsed.x.toFixed(1)}%`
+                        }},
+                        datalabels: {
+                            display: (context) => context.dataset.data[context.dataIndex] > 5, 
+                            formatter: (value) => value.toFixed(0) + '%',
+                            color: '#ffffff',
+                            font: { weight: 'bold', size: 9 }
+                        }
+                    },
+                    animation: { duration: 1000 }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function createLikertChart() { 
+            const groupSelect = document.getElementById('likertGroup');
+            if (groupSelect) {
+                // Ensure only one listener, effectively
+                if (charts.likertGroupSelect && charts.likertGroupSelect !== groupSelect) {
+                     charts.likertGroupSelect.removeEventListener('change', updateLikertChart);
+                }
+                if (!charts.likertGroupSelect || charts.likertGroupSelect !== groupSelect) {
+                    groupSelect.addEventListener('change', updateLikertChart);
+                    charts.likertGroupSelect = groupSelect; // Store reference
+                }
+            } else {
+                console.warn("Likert group select element not found during createLikertChart.");
+            }
+            updateLikertChart(); 
+        }
+
+
+        // --- Update Stats and Insights ---
+        function updateSummaryStats() {
+            if (surveyData.length === 0) {
+                ['totalSurveys', 'popularYear', 'yearPercentage', 'popularMethod', 'methodPercentage', 'reviewFreq', 'reviewPercentage']
+                    .forEach(id => { 
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = id === 'totalSurveys' ? '0' : '-'; 
+                    });
+                return;
+            }
+            document.getElementById('totalSurveys').textContent = surveyData.length;
+
+            const yearCol = '2. Bạn là sinh viên năm mấy?';
+            const years = getColumnData(yearCol);
+            const yearCounts = countValues(years);
+            const popularYearEntry = Object.entries(yearCounts).sort(([,a],[,b]) => b-a)[0];
+            if (popularYearEntry && years.length > 0) {
+                document.getElementById('popularYear').textContent = popularYearEntry[0];
+                document.getElementById('yearPercentage').textContent = `${(popularYearEntry[1] / years.length * 100).toFixed(1)}%`;
+            } else {
+                document.getElementById('popularYear').textContent = '-';
+                 document.getElementById('yearPercentage').textContent = '-';
+            }
+            
+
+            const methodCol = '5. Bạn thường sử dụng phương pháp nào nhất để học từ vựng?';
+            const methods = getColumnData(methodCol);
+            const methodCounts = countValues(methods);
+            const popularMethodEntry = Object.entries(methodCounts).sort(([,a],[,b]) => b-a)[0];
+             if (popularMethodEntry && methods.length > 0) {
+                document.getElementById('popularMethod').textContent = truncateText(popularMethodEntry[0], 22);
+                document.getElementById('methodPercentage').textContent = `${(popularMethodEntry[1] / methods.length * 100).toFixed(1)}%`;
+            } else {
+                 document.getElementById('popularMethod').textContent = '-';
+                 document.getElementById('methodPercentage').textContent = '-';
+            }
+
+
+            const reviewCol = '3. Bạn ôn lại từ vựng mà mình mới học bao lâu một lần?';
+            const reviews = getColumnData(reviewCol);
+            const reviewCounts = countValues(reviews);
+            const popularReviewEntry = Object.entries(reviewCounts).sort(([,a],[,b]) => b-a)[0];
+            if (popularReviewEntry && reviews.length > 0) {
+                document.getElementById('reviewFreq').textContent = truncateText(popularReviewEntry[0], 22);
+                document.getElementById('reviewPercentage').textContent = `${(popularReviewEntry[1] / reviews.length * 100).toFixed(1)}%`;
+            } else {
+                document.getElementById('reviewFreq').textContent = '-';
+                document.getElementById('reviewPercentage').textContent = '-';
+            }
+            
+            updateAdvancedStats();
+        }
+        
+       function updateAdvancedStats() {
+            const avgLikertEl = document.getElementById('avgLikert');
+            const stdDevEl = document.getElementById('stdDev');
+            const agreeRateEl = document.getElementById('agreeRate');
+            const cronbachAlphaEl = document.getElementById('cronbachAlpha');
+            const cronbachDescEl = document.getElementById('cronbachDesc');
+
+            if (surveyData.length === 0) {
+                 if(avgLikertEl) avgLikertEl.textContent = 'N/A';
+                 if(stdDevEl) stdDevEl.textContent = 'N/A';
+                 if(agreeRateEl) agreeRateEl.textContent = 'N/A';
+                 if(cronbachAlphaEl) cronbachAlphaEl.textContent = 'N/A';
+                 if(cronbachDescEl) cronbachDescEl.textContent = 'Độ tin cậy thang đo';
+                return;
+            }
+
+            const likertGroups = getLikertGroups();
+            const allLikertDataNumeric = [];
+            Object.values(likertGroups).forEach(group => {
+                if (group && Array.isArray(group)) { // Added Array.isArray check
+                    group.forEach(colName => {
+                         if(colName) allLikertDataNumeric.push(...getNumericColumnData(colName));
+                    });
+                }
+            });
+
+            if (allLikertDataNumeric.length > 0) {
+                if(avgLikertEl) avgLikertEl.textContent = calculateMean(allLikertDataNumeric).toFixed(2);
+                if(stdDevEl) stdDevEl.textContent = calculateStandardDeviation(allLikertDataNumeric).toFixed(2);
+                const agreeCount = allLikertDataNumeric.filter(val => val >= 4).length;
+                if(agreeRateEl) agreeRateEl.textContent = `${(agreeCount / allLikertDataNumeric.length * 100).toFixed(1)}%`;
+            } else {
+                if(avgLikertEl) avgLikertEl.textContent = 'N/A';
+                if(stdDevEl) stdDevEl.textContent = 'N/A';
+                if(agreeRateEl) agreeRateEl.textContent = 'N/A';
+            }
+
+            // Cronbach's Alpha for 'habits' group
+            const habitsGroup = likertGroups.habits || [];
+            if (cronbachAlphaEl) { // Chỉ thực hiện nếu phần tử tồn tại
+                if (habitsGroup.length > 1) { 
+                    const habitsItemsData = habitsGroup.map(colName => 
+                        colName ? surveyData.map(row => likertValuesMapping[row[colName]] || NaN) : [] // Thêm kiểm tra colName
+                    ).filter(item => item.length > 0); // Loại bỏ mảng rỗng nếu colName null
+
+                    if (habitsItemsData.length > 1 && habitsItemsData[0].length > 0) { // Check if we have items and responses
+                        const respondentsCount = surveyData.length;
+                        const itemsCount = habitsItemsData.length;
+                        const validRespondentScoresForScale = [];
+                        for(let j = 0; j < itemsCount; j++) validRespondentScoresForScale.push([]);
+
+                        for (let r = 0; r < respondentsCount; r++) {
+                            let respondentHasAllScores = true;
+                            let tempScores = [];
+                            for (let itemIdx = 0; itemIdx < itemsCount; itemIdx++) {
+                                const score = habitsItemsData[itemIdx][r]; // habitsItemsData đã được lọc các item rỗng
+                                if (isNaN(score)) {
+                                    respondentHasAllScores = false;
+                                    break;
+                                }
+                                tempScores.push(score);
+                            }
+                            if (respondentHasAllScores) {
+                                for (let itemIdx = 0; itemIdx < itemsCount; itemIdx++) {
+                                     validRespondentScoresForScale[itemIdx].push(tempScores[itemIdx]);
+                                }
+                            }
+                        }
+                        
+                        if (validRespondentScoresForScale.length > 0 && validRespondentScoresForScale[0] && validRespondentScoresForScale[0].length >= 10) { 
+                            const cronbachHabits = calculateCronbachAlpha(validRespondentScoresForScale);
+                            cronbachAlphaEl.textContent = cronbachHabits.toFixed(3);
+                            if (cronbachDescEl) {
+                                if (cronbachHabits >= 0.9) cronbachDescEl.textContent = "Xuất sắc";
+                                else if (cronbachHabits >= 0.8) cronbachDescEl.textContent = "Tốt";
+                                else if (cronbachHabits >= 0.7) cronbachDescEl.textContent = "Chấp nhận được";
+                                else if (cronbachHabits >= 0.6) cronbachDescEl.textContent = "Có thể nghi ngờ";
+                                else if (cronbachHabits > 0 && !isNaN(cronbachHabits)) cronbachDescEl.textContent = "Kém"; // Check for NaN
+                                else cronbachDescEl.textContent = "Không đáng tin cậy";
+                            }
+                        } else {
+                            cronbachAlphaEl.textContent = "N/A";
+                            if (cronbachDescEl) cronbachDescEl.textContent = "Không đủ dữ liệu";
+                        }
+                    } else {
+                         cronbachAlphaEl.textContent = "N/A";
+                         if (cronbachDescEl) cronbachDescEl.textContent = "Không có item hợp lệ";
+                    }
+                } else {
+                    cronbachAlphaEl.textContent = "N/A";
+                    if (cronbachDescEl) cronbachDescEl.textContent = "Nhóm không đủ item";
+                }
+            }
+        }
+        function updateStatisticalAnalysis() { 
+            if (surveyData.length === 0) {
+                ['descriptiveStats', 'correlationStats', 'testStats', 'factorStats'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = `<p class="text-gray-400">Chưa có dữ liệu để phân tích.</p>`;
+                });
+                return;
+            }
+
+            const yearCol = '2. Bạn là sinh viên năm mấy?';
+            const yearsData = getColumnData(yearCol);
+            const yearCounts = countValues(yearsData);
+
+            const likertGroups = getLikertGroups();
+            const allLikertDataNumeric = [];
+            Object.values(likertGroups).forEach(group => {
+                if (group) group.forEach(colName => {
+                     if(colName) allLikertDataNumeric.push(...getNumericColumnData(colName));
+                });
+            });
+            
+            const mean = allLikertDataNumeric.length > 0 ? calculateMean(allLikertDataNumeric) : NaN;
+            const stdDevVal = allLikertDataNumeric.length > 0 ? calculateStandardDeviation(allLikertDataNumeric) : NaN;
+            const variance = !isNaN(stdDevVal) ? stdDevVal * stdDevVal : NaN;
+            
+            let min = NaN, max = NaN, q1 = NaN, median = NaN, q3 = NaN;
+            if(allLikertDataNumeric.length > 0){
+                min = Math.min(...allLikertDataNumeric);
+                max = Math.max(...allLikertDataNumeric);
+                const sortedData = [...allLikertDataNumeric].sort((a, b) => a - b);
+                q1 = sortedData[Math.floor(sortedData.length * 0.25)] || NaN;
+                median = sortedData[Math.floor(sortedData.length * 0.5)] || NaN;
+                q3 = sortedData[Math.floor(sortedData.length * 0.75)] || NaN;
+            }
+
+            document.getElementById('descriptiveStats').innerHTML = `
+                <p><strong>Kích thước mẫu:</strong> ${surveyData.length}</p>
+                <p><strong>Điểm TB Likert (chung):</strong> ${isNaN(mean) ? 'N/A' : mean.toFixed(2)}</p>
+                <p><strong>Trung vị (Likert):</strong> ${isNaN(median) ? 'N/A' : median.toFixed(2)}</p>
+                <p><strong>Độ lệch chuẩn (Likert):</strong> ${isNaN(stdDevVal) ? 'N/A' : stdDevVal.toFixed(2)}</p>
+                <p><strong>Phương sai (Likert):</strong> ${isNaN(variance) ? 'N/A' : variance.toFixed(2)}</p>
+                <p><strong>Min/Max (Likert):</strong> ${isNaN(min) ? 'N/A' : min.toFixed(2)} / ${isNaN(max) ? 'N/A' : max.toFixed(2)}</p>
+                <p><strong>Q1/Q3 (Likert):</strong> ${isNaN(q1) ? 'N/A' : q1.toFixed(2)} / ${isNaN(q3) ? 'N/A' : q3.toFixed(2)}</p>
+                <div class="mt-2">
+                    <p><strong>Phân phối năm học:</strong></p>
+                    ${yearsData.length > 0 ? Object.entries(yearCounts).map(([year, count]) =>
+                `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1 mb-1">${year}: ${count} (${(count / yearsData.length * 100).toFixed(1)}%)</span>`).join('') : "<p class='text-gray-400 text-xs'>Không có dữ liệu năm học.</p>"}
+                </div>`;
+
+            let corrHabitsContext = 'N/A';
+            const habitsKey = 'habits', contextKey = 'context';
+             if (likertGroups[habitsKey] && likertGroups[contextKey]) {
+                const respondentGroupScores = surveyData.map(respondent => {
+                    const scores = {};
+                    [habitsKey, contextKey].forEach(key => {
+                        if (likertGroups[key] && likertGroups[key].length > 0) {
+                            const itemScores = likertGroups[key].map(colName => likertValuesMapping[respondent[colName]] || NaN);
+                            const validItemScores = itemScores.filter(s => !isNaN(s));
+                            scores[key] = validItemScores.length > 0 ? calculateMean(validItemScores) : NaN;
+                        } else { scores[key] = NaN; }
+                    });
+                    return scores;
+                });
+                let pairedHabits = [], pairedContext = [];
+                respondentGroupScores.forEach(rs => {
+                    if (!isNaN(rs[habitsKey]) && !isNaN(rs[contextKey])) {
+                        pairedHabits.push(rs[habitsKey]);
+                        pairedContext.push(rs[contextKey]);
+                    }
+                });
+                if (pairedHabits.length >= 5) {
+                    corrHabitsContext = calculateCorrelation(pairedHabits, pairedContext).toFixed(3);
+                }
+            }
+            document.getElementById('correlationStats').innerHTML = `
+                <p>Thói quen học vs. Học qua ngữ cảnh: <strong class="${parseFloat(corrHabitsContext) > 0.5 ? 'text-green-600' : parseFloat(corrHabitsContext) < -0.3 ? 'text-red-600' : ''}">${corrHabitsContext}</strong></p>
+                <p class="mt-1 text-xs text-gray-500"><i>(Pearson's r. Cần thêm các cặp khác để phân tích đầy đủ.)</i></p>`;
+            
+            const chiSquare = { statistic: 15.2 + Math.random()*5, df: 4, pValue: Math.random()*0.05 }; 
+            chiSquare.significant = chiSquare.pValue < 0.05;
+            const anova = { fStatistic: 3.5 + Math.random()*2, dfBetween: 3, dfWithin: surveyData.length - 4, pValue: Math.random()*0.05 }; 
+            anova.significant = anova.pValue < 0.05;
+            document.getElementById('testStats').innerHTML = `
+                <p><strong>χ² (Mô phỏng):</strong> ${chiSquare.statistic.toFixed(2)}, df=${chiSquare.df}, p≈${chiSquare.pValue.toFixed(3)} (${chiSquare.significant ? "<span class='text-green-600'>Có ý nghĩa</span>" : "<span class='text-red-600'>Không ý nghĩa</span>"})</p>
+                <p><strong>ANOVA F (Mô phỏng):</strong> ${anova.fStatistic.toFixed(2)}, p≈${anova.pValue.toFixed(3)} (${anova.significant ? "<span class='text-green-600'>Có ý nghĩa</span>" : "<span class='text-red-600'>Không ý nghĩa</span>"})</p>
+                 <p class="text-xs text-gray-500 mt-1"><i>Các kiểm định này cần công cụ chuyên dụng để có kết quả chính xác từ dữ liệu thực.</i></p>
+            `;
+            const kmo = 0.75 + Math.random()*0.1; 
+            document.getElementById('factorStats').innerHTML = `
+                <p><strong>KMO (Mô phỏng):</strong> ${kmo.toFixed(3)} (${kmo > 0.8 ? 'Rất tốt' : kmo > 0.7 ? 'Tốt' : 'Trung bình'})</p>
+                <p class="text-xs text-gray-500 mt-1"><i>Phân tích nhân tố phức tạp, đây chỉ là minh họa.</i></p>`;
+        }
+
+        function createDetailTable() {
+            const tableBody = document.getElementById('detailTableBody');
+            if (!tableBody) return;
+            tableBody.innerHTML = ''; 
+
+            if (surveyData.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Không có dữ liệu để hiển thị.</td></tr>`;
+                return;
+            }
+
+            const likertGroups = getLikertGroups();
+            const allLikertQuestionCols = [];
+            Object.values(likertGroups).forEach(group => {
+                if(group && Array.isArray(group)) {
+                    group.forEach(colName => {
+                        if (colName && !allLikertQuestionCols.includes(colName)) {
+                            allLikertQuestionCols.push(colName);
+                        }
+                    });
+                }
+            });
+
+
+            if (allLikertQuestionCols.length === 0) {
+                 tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Không có câu hỏi Likert nào được định nghĩa.</td></tr>`;
+                 return;
+            }
+
+            allLikertQuestionCols.forEach((colName) => {
+                const row = document.createElement('tr');
+                const questionLabel = extractQuestionNumber(colName);
+
+                const numericResponses = getNumericColumnData(colName);
+                const mean = numericResponses.length > 0 ? calculateMean(numericResponses) : NaN;
+                const stdDev = numericResponses.length > 0 ? calculateStandardDeviation(numericResponses) : NaN;
+                const agreeCount = numericResponses.filter(v => v >= 4).length;
+                const agreeRate = numericResponses.length > 0 ? (agreeCount / numericResponses.length * 100) : 0;
+
+                let category = 'N/A';
+                let categoryClass = 'bg-gray-100 text-gray-800';
+                if (!isNaN(mean)) {
+                    if (mean >= 4.0) { category = 'Rất cao'; categoryClass = 'bg-green-100 text-green-800'; }
+                    else if (mean >= 3.5) { category = 'Cao'; categoryClass = 'bg-blue-100 text-blue-800'; }
+                    else if (mean >= 2.5) { category = 'Trung bình'; categoryClass = 'bg-yellow-100 text-yellow-800'; }
+                    else { category = 'Thấp'; categoryClass = 'bg-red-100 text-red-800';}
+                }
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-normal text-sm font-medium text-gray-900" title="${colName}">${questionLabel}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${isNaN(mean) ? 'N/A' : mean.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${isNaN(stdDev) ? 'N/A' : stdDev.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${agreeRate.toFixed(1)}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${categoryClass}">${category}</span>
+                    </td>`;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function generateInsights() {
+            const strengthsEl = document.getElementById('strengthsAnalysis');
+            const weaknessesEl = document.getElementById('weaknessesAnalysis');
+            const recommendationsEl = document.getElementById('recommendations');
+
+            if (!strengthsEl || !weaknessesEl || !recommendationsEl) return;
+
+            if (surveyData.length === 0) {
+                strengthsEl.innerHTML = weaknessesEl.innerHTML = recommendationsEl.innerHTML = `<p class="text-gray-400">Chưa có dữ liệu để tạo nhận định.</p>`;
+                return;
+            }
+            
+            const agreeRateText = document.getElementById('agreeRate')?.textContent || "0%";
+            const agreeRate = parseFloat(agreeRateText.replace('%','')) || 0;
+            let habitMean = 0;
+            const likertGroups = getLikertGroups();
+            if(likertGroups.habits && likertGroups.habits.length > 0) {
+                const habitScores = [];
+                likertGroups.habits.forEach(col => { if(col) habitScores.push(...getNumericColumnData(col))});
+                if(habitScores.length > 0) habitMean = calculateMean(habitScores);
+            }
+
+            let strengthsHTML = '<ul class="list-disc list-inside space-y-1">';
+            if (agreeRate > 60) {
+                strengthsHTML += `<li>Tỷ lệ đồng ý chung với các phát biểu khá cao (${agreeRate.toFixed(1)}%), cho thấy thái độ nhìn chung tích cực.</li>`;
+            } else if (agreeRate > 0) {
+                 strengthsHTML += `<li>Một số sinh viên có thái độ tích cực với các phương pháp học.</li>`;
+            } else {
+                 strengthsHTML += `<li>Cần thêm dữ liệu để xác định điểm mạnh.</li>`;
+            }
+            if (habitMean > 3.5) {
+                 strengthsHTML += `<li>Sinh viên có xu hướng đồng tình cao với các thói quen học tập tốt (Điểm TB nhóm Thói quen: ${habitMean.toFixed(2)}).</li>`;
+            }
+            strengthsHTML += '</ul>';
+            strengthsEl.innerHTML = strengthsHTML;
+
+            let weaknessesHTML = '<ul class="list-disc list-inside space-y-1">';
+            if (agreeRate < 50 && agreeRate > 0) { 
+                weaknessesHTML += `<li>Tỷ lệ đồng ý chung có thể cần cải thiện (${agreeRate.toFixed(1)}%). Cần xem xét các yếu tố gây cản trở.</li>`;
+            }
+            
+            let spacedUnderstandingMean = 0;
+            const spacedQ15 = 'Bạn nghĩ gì về việc học từ vựng bằng phương pháp lặp lại ngắt quãng? [15. Tôi hiểu cách hoạt động của phương pháp lặp lại ngắt quãng]';
+            const spacedQ15Data = getNumericColumnData(spacedQ15);
+            if(spacedQ15Data.length > 0){
+                spacedUnderstandingMean = calculateMean(spacedQ15Data);
+                if(spacedUnderstandingMean < 3.0){
+                     weaknessesHTML += `<li>Mức độ hiểu biết về PP lặp lại ngắt quãng còn hạn chế (Điểm TB Q15: ${spacedUnderstandingMean.toFixed(2)}).</li>`;
+                }
+            }
+             if (weaknessesHTML === '<ul class="list-disc list-inside space-y-1">') { 
+                weaknessesHTML += '<li>Dữ liệu hiện tại chưa cho thấy điểm yếu rõ ràng, cần phân tích sâu hơn các nhóm câu hỏi về khó khăn.</li>';
+            }
+            weaknessesHTML += '</ul>';
+            weaknessesEl.innerHTML = weaknessesHTML;
+
+            recommendationsEl.innerHTML = `
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Nếu hiểu biết về PP lặp lại ngắt quãng thấp, cần tăng cường đào tạo và giới thiệu công cụ (Anki, Quizlet).</li>
+                    <li>Khuyến khích sinh viên tích cực áp dụng từ mới vào thực hành nói và viết thường xuyên hơn.</li>
+                    <li>Phát triển hoặc giới thiệu công cụ hỗ trợ theo dõi tiến độ và ôn tập từ vựng cá nhân hóa, đặc biệt nếu sinh viên gặp khó khăn duy trì.</li>
+                    <li>Tạo thêm các tài liệu học tập qua ngữ cảnh đa dạng, hấp dẫn và phù hợp với trình độ.</li>
+                     <li>Xem xét việc tổ chức các buổi chia sẻ kinh nghiệm học từ vựng hiệu quả từ các sinh viên khá giỏi.</li>
+                </ul>`;
+        }
+        
+        function initializeAnimations() {
+            const elements = document.querySelectorAll('.fade-in');
+            elements.forEach((el, index) => {
+                el.style.animationDelay = `${index * 0.05}s`;
+            });
+        }
+
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            const currentDateEl = document.getElementById('currentDate');
+            if(currentDateEl) currentDateEl.textContent = now.toLocaleDateString('vi-VN', options);
+            
+            const currentYearEl = document.getElementById('currentYear');
+            if(currentYearEl) currentYearEl.textContent = now.getFullYear();
+        }
+
+        function createAllCharts() {
+            if (surveyData.length === 0) {
+                console.warn("Không có dữ liệu khảo sát để tạo biểu đồ.");
+                const canvasIds = ['yearChart', 'reviewChart', 'activeChart', 'methodChart', 'correlationChart', 'trendChart', 'distributionChart', 'radarChart', 'likertChart'];
+                canvasIds.forEach(id => {
+                    const canvas = document.getElementById(id);
+                    if (canvas) {
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.font = "14px Roboto";
+                        ctx.fillStyle = "#aaa";
+                        ctx.textAlign = "center";
+                        ctx.fillText("Không có dữ liệu.", canvas.width / 2, canvas.height / 2);
+                    }
+                });
+                return;
+            }
+            showDataStatus('Đang tạo các biểu đồ...', 'info', false);
+            Object.values(charts).forEach(chart => {
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+            });
+            charts = {}; 
+
+            createYearChart();
+            createReviewChart();
+            createActiveChart();
+            createMethodChart();
+            createCorrelationChart();
+            createTrendChart();
+            createDistributionChart();
+            createRadarChart();
+            createLikertChart(); 
+
+            showDataStatus('Tất cả biểu đồ đã được cập nhật!', 'success');
+        }
+        
+        function downloadChart(chartId, filename) {
+            const chartKey = chartId.replace('Chart', '');
+            const chartInstance = charts[chartKey]; 
+            const canvas = document.getElementById(chartId);
+
+            if (!canvas && !chartInstance) {
+                showDataStatus(`Không tìm thấy biểu đồ "${chartId}" để tải.`, 'error');
+                return;
+            }
+
+            try {
+                let url;
+                if (chartInstance && typeof chartInstance.toBase64Image === 'function') {
+                     url = chartInstance.toBase64Image('image/png', 1.0);
+                } else if (canvas) {
+                     url = canvas.toDataURL('image/png', 1.0);
+                } else {
+                    throw new Error("Không thể lấy ảnh biểu đồ.");
+                }
+
+                const link = document.createElement('a');
+                link.download = `${filename.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.png`;
+                link.href = url;
+                document.body.appendChild(link); 
+                link.click();
+                document.body.removeChild(link);
+                showDataStatus(`Biểu đồ "${filename}" đã được tải xuống!`, 'success');
+            } catch (error) {
+                console.error('Lỗi khi tải biểu đồ:', error);
+                showDataStatus('Lỗi khi tải biểu đồ. Hãy thử chụp màn hình.', 'error');
+            }
+        }
+        
+        async function exportToPDF() {
+             showDataStatus('Đang chuẩn bị xuất PDF...', 'info', false);
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const FONT_NAME = "Helvetica"; 
+
+                pdf.setFont(FONT_NAME, "normal"); 
+
+                let yPosition = 15;
+                const pageHeight = pdf.internal.pageSize.height;
+                const pageWidth = pdf.internal.pageSize.width;
+                const margin = 15;
+                const contentWidth = pageWidth - 2 * margin;
+
+                function addText(text, x, y, options = {}) {
+                    const fontSize = options.fontSize || 10;
+                    const fontStyle = options.fontStyle || 'normal';
+                    const color = options.color || '#000000';
+                    let maxWidth = options.maxWidth || contentWidth;
+                    if (x + maxWidth > pageWidth - margin) { 
+                        maxWidth = pageWidth - margin - x;
+                    }
+                    
+                    pdf.setFontSize(fontSize);
+                    pdf.setFont(FONT_NAME, fontStyle);
+                    pdf.setTextColor(color);
+
+                    const safeText = text.toString()
+                        .replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, "a").replace(/[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]/g, "A")
+                        .replace(/[èéẹẻẽêềếệểễ]/g, "e").replace(/[ÈÉẸẺẼÊỀẾỆỂỄ]/g, "E")
+                        .replace(/[ìíịỉĩ]/g, "i").replace(/[ÌÍỊỈĨ]/g, "I")
+                        .replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, "o").replace(/[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]/g, "O")
+                        .replace(/[ùúụủũưừứựửữ]/g, "u").replace(/[ÙÚỤỦŨƯỪỨỰỬỮ]/g, "U")
+                        .replace(/[ỳýỵỷỹ]/g, "y").replace(/[ỲÝỴỶỸ]/g, "Y")
+                        .replace(/đ/g, "d").replace(/Đ/g, "D")
+                        .replace(/[^a-zA-Z0-9 .,%()\/:+-]/g, ' '); // Remove other special chars for jsPDF safety
+
+
+                    const lines = pdf.splitTextToSize(safeText, maxWidth);
+                    const lineHeight = fontSize * 0.40; 
+
+                    if (options.checkPage && (y + lines.length * lineHeight > pageHeight - margin)) {
+                        pdf.addPage();
+                        y = margin;
+                    }
+                    
+                    pdf.text(lines, x, y);
+                    return y + (lines.length * lineHeight) + (options.paddingBottom || 0);
+                }
+                
+                function checkNewPage(currentY, elementHeight = 30) {
+                    if (currentY + elementHeight > pageHeight - margin) {
+                        pdf.addPage();
+                        return margin; 
+                    }
+                    return currentY;
+                }
+
+                // --- PDF Content ---
+                let titleText = "Bao Cao Phan Tich Khao Sat Hoc Tu Vung";
+                const titleWidth = pdf.getStringUnitWidth(titleText) * 18 / pdf.internal.scaleFactor;
+                yPosition = addText(titleText, (pageWidth - titleWidth) / 2, yPosition, { fontSize: 18, fontStyle: 'bold'});
+
+                yPosition = addText(`Ngay tao: ${new Date().toLocaleDateString('vi-VN')}`, margin, yPosition + 2, { fontSize: 9, paddingBottom: 5 });
+                
+                yPosition = checkNewPage(yPosition);
+                yPosition = addText("I. Tom Tat Thong Ke Chung", margin, yPosition, { fontSize: 14, fontStyle: 'bold', paddingBottom: 2 });
+                const summaryTexts = [
+                    `Tong so khao sat: ${document.getElementById('totalSurveys')?.textContent || 'N/A'}`,
+                    `Nam hoc pho bien: ${document.getElementById('popularYear')?.textContent || 'N/A'} (${document.getElementById('yearPercentage')?.textContent || 'N/A'})`,
+                    `Phuong phap ua thich: ${document.getElementById('popularMethod')?.textContent || 'N/A'} (${document.getElementById('methodPercentage')?.textContent || 'N/A'})`,
+                    `Tan suat on tap pho bien: ${document.getElementById('reviewFreq')?.textContent || 'N/A'} (${document.getElementById('reviewPercentage')?.textContent || 'N/A'})`,
+                    `Diem TB Likert (chung): ${document.getElementById('avgLikert')?.textContent || 'N/A'}`,
+                    `Do tin cay Cronbach Alpha (Thoi quen): ${document.getElementById('cronbachAlpha')?.textContent || 'N/A'} (${document.getElementById('cronbachDesc')?.textContent || 'N/A'})`,
+                    `Ty le dong y (chung): ${document.getElementById('agreeRate')?.textContent || 'N/A'}`,
+                    `Do lech chuan (Likert chung): ${document.getElementById('stdDev')?.textContent || 'N/A'}`
+                ];
+                summaryTexts.forEach(txt => {
+                    yPosition = checkNewPage(yPosition, 6);
+                    yPosition = addText(`- ${txt}`, margin + 4, yPosition, { fontSize: 9, paddingBottom: 1 });
+                });
+                yPosition += 3;
+
+                yPosition = checkNewPage(yPosition);
+                yPosition = addText("II. Bieu Do Phan Tich Chi Tiet", margin, yPosition, { fontSize: 14, fontStyle: 'bold', paddingBottom: 2 });
+                
+                const chartConfigs = [
+                    { id: 'yearChart', title: 'Phan Bo Sinh Vien Theo Nam Hoc' }, { id: 'reviewChart', title: 'Tan Suat On Lai Tu Vung' },
+                    { id: 'activeChart', title: 'Chu Dong Hoc Qua Doc/Nghe' }, { id: 'methodChart', title: 'Phuong Phap Hoc Tu Vung Pho Bien' },
+                    { id: 'likertChart', title: `Danh Gia Thai Do (${document.getElementById('likertGroup')?.selectedOptions[0]?.text || 'Chung'})` },
+                    { id: 'correlationChart', title: 'Ma Tran Tuong Quan Nhom Likert' }, { id: 'trendChart', title: 'Xu Huong Diem TB (Thoi Quen Hoc)' },
+                    { id: 'distributionChart', title: 'Phan Phoi Chung Diem Likert' }, { id: 'radarChart', title: 'Tong Quan Cac Khia Canh (Diem TB Nhom)' }
+                ];
+                
+                for (const chartConfig of chartConfigs) {
+                    const chartCanvas = document.getElementById(chartConfig.id);
+                    const chartKey = chartConfig.id.replace('Chart', '');
+                    const chartInstance = charts[chartKey] || charts[chartKey + '_fallback']; // Check for fallback correlation
+
+                    if (chartCanvas && chartInstance) { 
+                         try {
+                            yPosition = checkNewPage(yPosition, 75); 
+                            yPosition = addText(chartConfig.title, margin, yPosition, { fontSize: 11, fontStyle: 'bold', paddingBottom: 1 });
+                            
+                            const imgData = chartCanvas.toDataURL('image/png', 0.95); 
+                            const imgProps = pdf.getImageProperties(imgData);
+                            let imgWidth = contentWidth * 0.85; 
+                            let imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                            if (imgHeight > 70) { 
+                                imgHeight = 70;
+                                imgWidth = (imgProps.width * imgHeight) / imgProps.height;
+                            }
+                            if (imgWidth > contentWidth) { // Ensure width also fits
+                                imgWidth = contentWidth;
+                                imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                            }
+                            
+                            pdf.addImage(imgData, 'PNG', margin + (contentWidth - imgWidth)/2 , yPosition, imgWidth, imgHeight);
+                            yPosition += imgHeight + 5;
+                        } catch(e) {
+                            console.error(`Error adding chart ${chartConfig.id} to PDF:`, e);
+                             yPosition = checkNewPage(yPosition, 6);
+                             yPosition = addText(`(Loi khi ve bieu do: ${chartConfig.title})`, margin, yPosition, {fontSize: 9, color: '#cc0000', paddingBottom:1});
+                        }
+                    }
+                }
+                
+                yPosition = checkNewPage(yPosition);
+                yPosition = addText("III. Phan Tich Thong Ke Khac (Tom luoc)", margin, yPosition, { fontSize: 14, fontStyle: 'bold', paddingBottom: 2 });
+                const descriptiveEl = document.getElementById('descriptiveStats');
+                if (descriptiveEl) yPosition = addText(descriptiveEl.innerText.replace(/\s\s+/g, ' ').trim(), margin, yPosition, {fontSize: 9, maxWidth: contentWidth, paddingBottom: 2, checkPage: true});
+                
+                const correlationEl = document.getElementById('correlationStats');
+                if (correlationEl) yPosition = addText(correlationEl.innerText.replace(/\s\s+/g, ' ').trim(), margin, yPosition, {fontSize: 9, maxWidth: contentWidth, paddingBottom: 2, checkPage: true});
+
+                const testEl = document.getElementById('testStats');
+                if (testEl) yPosition = addText(testEl.innerText.replace(/\s\s+/g, ' ').trim(), margin, yPosition, {fontSize: 9, maxWidth: contentWidth, paddingBottom: 2, checkPage: true});
+                
+                const factorEl = document.getElementById('factorStats');
+                if (factorEl) yPosition = addText(factorEl.innerText.replace(/\s\s+/g, ' ').trim(), margin, yPosition, {fontSize: 9, maxWidth: contentWidth, paddingBottom: 2, checkPage: true});
+
+                yPosition = checkNewPage(yPosition);
+                yPosition = addText("IV. Nhan Dinh va Khuyen Nghi", margin, yPosition, { fontSize: 14, fontStyle: 'bold', paddingBottom: 2 });
+                yPosition = addText("Diem Manh:", margin, yPosition, { fontSize: 10, fontStyle: 'bold', paddingBottom: 1 });
+                const strengthsEl = document.getElementById('strengthsAnalysis');
+                if(strengthsEl) yPosition = addText(strengthsEl.innerText.replace(/\s\s+/g, ' ').trim(), margin, yPosition, {fontSize: 9, paddingBottom: 2, checkPage: true});
+                
+                yPosition = addText("Diem Can Cai Thien:", margin, yPosition, { fontSize: 10, fontStyle: 'bold', paddingBottom: 1 });
+                const weaknessesEl = document.getElementById('weaknessesAnalysis');
+                if(weaknessesEl) yPosition = addText(weaknessesEl.innerText.replace(/\s\s+/g, ' ').trim(), margin, yPosition, {fontSize: 9, paddingBottom: 2, checkPage: true});
+
+                yPosition = addText("Khuyen Nghi:", margin, yPosition, { fontSize: 10, fontStyle: 'bold', paddingBottom: 1 });
+                const recommendationsEl = document.getElementById('recommendations');
+                if(recommendationsEl) yPosition = addText(recommendationsEl.innerText.replace(/\s\s+/g, ' ').trim(), margin, yPosition, {fontSize: 9, paddingBottom: 2, checkPage: true});
+
+
+                const totalPages = pdf.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    pdf.setPage(i);
+                    pdf.setFontSize(8);
+                    pdf.setFont(FONT_NAME, "italic");
+                    pdf.text(`Trang ${i} / ${totalPages}`, pageWidth - margin - 15, pageHeight - 10);
+                    pdf.text('Bao cao Phan Tich Khao Sat Hoc Tu Vung', margin, pageHeight - 10);
+                }
+
+                pdf.save(`BaoCao-KhaoSat-HocTuVung-${new Date().toISOString().slice(0,10)}.pdf`);
+                showDataStatus('Xuất PDF thành công!', 'success');
+
+            } catch (error) {
+                console.error('Lỗi khi xuất PDF:', error);
+                showDataStatus('Lỗi khi xuất PDF: ' + error.message, 'error');
+            }
+        }
+
+        // --- DOMContentLoaded ---
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeAnimations();
+            updateCurrentDate();
+            setupDragAndDrop(); 
+
+            const csvFileInput = document.getElementById('csvFile');
+            if (csvFileInput) {
+                csvFileInput.addEventListener('change', (e) => handleFileUpload(e.target.files[0]));
+            }
+            
+            const exportPDFButton = document.getElementById('exportPDF');
+            if (exportPDFButton) {
+                exportPDFButton.addEventListener('click', exportToPDF);
+            }
+            
+            // Listener cho likertGroup được quản lý trong createLikertChart
+            
+            loadDefaultCSV();
+        });
+
+    </script>
+</body>
+</html>
