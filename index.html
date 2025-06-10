@@ -613,6 +613,40 @@
                 <div class="chart-container chart-container-large">
                     <canvas id="likertChart"></canvas>
                 </div>
+                
+                <!-- Likert Statistics Table -->
+                <div class="mt-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-calculator mr-2 text-blue-600"></i>
+                        Bảng Thống Kê Chi Tiết - <span id="likertTableTitle">Thói quen học từ vựng</span>
+                    </h4>
+                    <div class="overflow-x-auto shadow-md rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200" id="likertStatsTable">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Câu hỏi</th>
+                                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        M</th>
+                                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Sd</th>
+                                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        SD & D (%)</th>
+                                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        N (%)</th>
+                                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        A & SA (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="likertStatsTableBody">
+                                <tr><td colspan="6" class="text-center py-4 text-gray-500">Đang tải dữ liệu bảng...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-500">
+                        <p><strong>Chú thích:</strong> M = Trung bình (1-5), Sd = Độ lệch chuẩn, SD & D = Rất không đồng ý + Không đồng ý, N = Trung lập, A & SA = Đồng ý + Rất đồng ý</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1680,6 +1714,81 @@ Các yếu tố giúp học hiệu quả bao gồm chiến lược tốt, tài l
                 },
                 plugins: [ChartDataLabels]
             });
+            
+            // Update the statistics table
+            updateLikertStatsTable(groupKey, groupQuestionColumns);
+        }
+
+        function updateLikertStatsTable(groupKey, groupQuestionColumns) {
+            const tableBody = document.getElementById('likertStatsTableBody');
+            const tableTitle = document.getElementById('likertTableTitle');
+            
+            if (!tableBody || !tableTitle) return;
+            
+            // Update table title
+            const groupTitles = {
+                'habits': 'Thói quen học từ vựng',
+                'spaced': 'PP Lặp lại ngắt quãng', 
+                'context': 'Học từ vựng qua ngữ cảnh',
+                'difficulties_spaced': 'Khó khăn: Lặp lại NQ',
+                'difficulties_context': 'Khó khăn: Qua ngữ cảnh'
+            };
+            tableTitle.textContent = groupTitles[groupKey] || 'Không xác định';
+            
+            tableBody.innerHTML = '';
+
+            if (surveyData.length === 0 || groupQuestionColumns.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-500">Không có dữ liệu để hiển thị.</td></tr>`;
+                return;
+            }
+
+            const likertOrder = ['Hoàn toàn không đồng ý', 'Không đồng ý', 'Trung lập', 'Đồng ý', 'Hoàn toàn đồng ý'];
+
+            groupQuestionColumns.forEach((colName, index) => {
+                if (!colName) return;
+                
+                const row = document.createElement('tr');
+                const questionLabel = extractQuestionNumber(colName);
+                
+                // Get response data
+                const columnData = getColumnData(colName);
+                const numericData = getNumericColumnData(colName);
+                const counts = countValues(columnData);
+                
+                // Calculate statistics
+                const mean = numericData.length > 0 ? calculateMean(numericData) : 0;
+                const stdDev = numericData.length > 0 ? calculateStandardDeviation(numericData) : 0;
+                
+                // Calculate percentages
+                const total = columnData.length;
+                let sdAndD = 0, neutral = 0, aAndSa = 0;
+                
+                if (total > 0) {
+                    sdAndD = ((counts['Hoàn toàn không đồng ý'] || 0) + (counts['Không đồng ý'] || 0)) / total * 100;
+                    neutral = (counts['Trung lập'] || 0) / total * 100;
+                    aAndSa = ((counts['Đồng ý'] || 0) + (counts['Hoàn toàn đồng ý'] || 0)) / total * 100;
+                }
+                
+                // Style based on mean value
+                let meanClass = 'text-gray-800';
+                if (mean >= 4.0) meanClass = 'text-green-700 font-semibold';
+                else if (mean >= 3.5) meanClass = 'text-blue-700 font-semibold';
+                else if (mean <= 2.5) meanClass = 'text-red-700 font-semibold';
+                
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-left text-sm text-gray-900 font-medium" title="${colName}">${questionLabel}</td>
+                    <td class="px-4 py-3 text-center text-sm ${meanClass}">${mean.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-center text-sm text-gray-600">${stdDev.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-center text-sm text-red-600">${sdAndD.toFixed(1)}%</td>
+                    <td class="px-4 py-3 text-center text-sm text-yellow-600">${neutral.toFixed(1)}%</td>
+                    <td class="px-4 py-3 text-center text-sm text-green-600">${aAndSa.toFixed(1)}%</td>
+                `;
+                
+                // Add hover effect
+                row.className = 'hover:bg-gray-50 transition-colors duration-200';
+                
+                tableBody.appendChild(row);
+            });
         }
 
         function createLikertChart() { 
@@ -1975,7 +2084,7 @@ Các yếu tố giúp học hiệu quả bao gồm chiến lược tốt, tài l
                 const numericResponses = getNumericColumnData(colName);
                 const mean = numericResponses.length > 0 ? calculateMean(numericResponses) : NaN;
                 const stdDev = numericResponses.length > 0 ? calculateStandardDeviation(numericResponses) : NaN;
-                const agreeCount = numericResponses.filter(v => v >= 4).length;
+                const agreeCount = numericResponses.filter(val => val >= 4).length;
                 const agreeRate = numericResponses.length > 0 ? (agreeCount / numericResponses.length * 100) : 0;
 
                 let category = 'N/A';
